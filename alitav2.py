@@ -1,10 +1,26 @@
 import os
 import json
 import sys
+import subprocess
 
 def warna(teks, kode):
     """Mengembalikan teks berwarna untuk output terminal."""
     return f"\033[{kode}m{teks}\033[0m"
+
+def periksa_pembaruan():
+    """Memeriksa pembaruan di repository GitHub dan menarik perubahan jika ada."""
+    repo_url = "https://github.com/nandaadetia/alitav2.git"
+    repo_path = os.path.dirname(os.path.abspath(__file__))
+    
+    try:
+        if not os.path.exists(os.path.join(repo_path, ".git")):
+            print(warna("[INFO] Repository belum dikloning, mengkloning sekarang...", 34))
+            subprocess.run(["git", "clone", repo_url, repo_path], check=True)
+        else:
+            print(warna("[INFO] Memeriksa pembaruan...", 34))
+            subprocess.run(["git", "pull"], cwd=repo_path, check=True)
+    except subprocess.CalledProcessError as e:
+        print(warna(f"[ERROR] Gagal memperbarui repository: {e}", 31))
 
 def baca_database(nama_file):
     """Membaca database JSON dan mengembalikan data."""
@@ -19,25 +35,25 @@ def baca_database(nama_file):
         return []
 
 def cari_kata(database, awalan, kata_terlarang, max_result=10, urut_panjang=False):
-    """Mencari kata berdasarkan awalan, menghindari kata terlarang.
-    Jika urut_panjang=True, hasil diurutkan berdasarkan panjang kata."""
+    """Mencari kata berdasarkan awalan, menghindari kata terlarang."""
     hasil = [kata for kata in database if kata.startswith(awalan.lower()) and kata not in kata_terlarang]
     if urut_panjang:
-        hasil.sort(key=len, reverse=True)  # Mengurutkan berdasarkan panjang kata (terpanjang dulu)
+        hasil.sort(key=len, reverse=True)
     else:
-        hasil.sort()  # Mengurutkan secara alfabetis
+        hasil.sort()
     return hasil[:max_result]
 
 def tampilkan_hasil(nama_db, hasil):
     """Menampilkan hasil pencarian dengan format yang lebih rapi dan berwarna."""
     print(f"\n>> Hasil dari {nama_db}:")
     if hasil:
-        print(warna("   " + " | ".join(hasil), 32))  # Hijau untuk hasil ditemukan
+        print(warna("   " + " | ".join(hasil), 32))
     else:
-        print(warna("   [Tidak ada hasil]", 31))  # Merah untuk hasil kosong
+        print(warna("   [Tidak ada hasil]", 31))
 
 def main():
-    """Fungsi utama program."""
+    periksa_pembaruan()
+    
     nama_files = {
         "KBBI": "newkbbifix.json",
         "KATA KERAMAT": "katafix.json",
@@ -51,7 +67,6 @@ def main():
         print(warna("[ERROR] Tidak ada database yang tersedia. Program dihentikan.", 31))
         return
     
-    # Mode CLI
     if len(sys.argv) > 1:
         awalan = sys.argv[1]
         for nama, db in databases.items():
@@ -60,11 +75,10 @@ def main():
             tampilkan_hasil(nama, hasil)
         return
     
-    # Mode interaktif
     while True:
         awalan = input("\nMasukkan awalan kata (Enter untuk keluar): ").strip()
         if not awalan:
-            print(warna("\n[INFO] Program selesai.", 34))  # Biru untuk info
+            print(warna("\n[INFO] Program selesai.", 34))
             break
         
         for nama, db in databases.items():
