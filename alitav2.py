@@ -18,9 +18,15 @@ def baca_database(nama_file):
         print(warna(f"[ERROR] Gagal membaca '{nama_file}', format JSON tidak valid.", 31))
         return []
 
-def cari_kata(database, awalan, kata_terlarang, max_result=10):
-    """Mencari kata berdasarkan awalan, menghindari kata terlarang."""
-    return [kata for kata in database if kata.startswith(awalan.lower()) and kata not in kata_terlarang][:max_result]
+def cari_kata(database, awalan, kata_terlarang, max_result=10, urut_panjang=False):
+    """Mencari kata berdasarkan awalan, menghindari kata terlarang.
+    Jika urut_panjang=True, hasil diurutkan berdasarkan panjang kata."""
+    hasil = [kata for kata in database if kata.startswith(awalan.lower()) and kata not in kata_terlarang]
+    if urut_panjang:
+        hasil.sort(key=len, reverse=True)  # Mengurutkan berdasarkan panjang kata (terpanjang dulu)
+    else:
+        hasil.sort()  # Mengurutkan secara alfabetis
+    return hasil[:max_result]
 
 def tampilkan_hasil(nama_db, hasil):
     """Menampilkan hasil pencarian dengan format yang lebih rapi dan berwarna."""
@@ -39,7 +45,7 @@ def main():
     }
     
     databases = {nama: baca_database(file) for nama, file in nama_files.items()}
-    kata_terlarang = {"angel", "allah", "esa", "tuhan", "zion", "yesus"}
+    kata_terlarang = {"allah"}
     
     if all(not db for db in databases.values()):
         print(warna("[ERROR] Tidak ada database yang tersedia. Program dihentikan.", 31))
@@ -49,7 +55,8 @@ def main():
     if len(sys.argv) > 1:
         awalan = sys.argv[1]
         for nama, db in databases.items():
-            hasil = cari_kata(db, awalan, kata_terlarang)
+            urut_panjang = nama == "KATA PANJANG"
+            hasil = cari_kata(db, awalan, kata_terlarang, urut_panjang=urut_panjang)
             tampilkan_hasil(nama, hasil)
         return
     
@@ -61,7 +68,8 @@ def main():
             break
         
         for nama, db in databases.items():
-            hasil = cari_kata(db, awalan, kata_terlarang)
+            urut_panjang = nama == "KATA PANJANG"
+            hasil = cari_kata(db, awalan, kata_terlarang, urut_panjang=urut_panjang)
             tampilkan_hasil(nama, hasil)
 
 if __name__ == "__main__":
